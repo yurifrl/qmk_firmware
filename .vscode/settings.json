@@ -6,7 +6,7 @@
     "files.exclude": {
         "**/.build": true,
         "**/*.hex": true,
-        "**/*.bin": true,
+        "**/*.bin": false,
         "**/*.uf2": true
     },
     "files.associations": {
@@ -26,6 +26,6 @@
     },
     "python.formatting.provider": "yapf",
     "[json]": {
-	    "editor.formatOnSave": false
+        "editor.formatOnSave": false
     }
 }

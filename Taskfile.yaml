@@ -1,0 +1,65 @@
+version: '3'
+
+# Dont forget to press fn1+z+j to reset to the default keymap (this one)
+# https://keychron.ca/pages/how-to-factory-reset-and-flash-firmware-for-your-k9-pro-keyboard
+tasks:
+  setup:
+    cmds:
+      - git submodule update --init --recursive
+
+  artifact_backup:
+    cmds:
+      - echo "Backing up artifacts..."
+      - mkdir -p artifacts
+      - |
+          ts=$(date '+%Y%m%d_%H%M%S')
+          for f in .build/keychron_k9_pro_ansi_rgb_via.bin* keychron_k9_pro_ansi_rgb_via.bin*; do
+            [ -e "$f" ] || continue
+            mv -f "$f" "artifacts/${ts}_$(basename "$f")"
+            break
+          done
+
+  build_via:
+    deps:
+      - artifact_backup
+    cmds:
+      - |
+          docker run \
+            -it --rm \
+            -u $(id -u):$(id -g) \
+            --workdir /qmk_firmware \
+            --volume .:/qmk_firmware \
+            qmkfm/qmk_cli \
+            bash -lc 'make keychron/k9_pro/ansi/rgb:via'
+
+  qmk_compile_via:
+    deps:
+      - artifact_backup
+    cmds:
+      - |
+          docker run \
+            -it --rm \
+            -u $(id -u):$(id -g) \
+            --workdir /qmk_firmware \
+            --volume .:/qmk_firmware \
+            qmkfm/qmk_cli \
+            bash -lc 'qmk compile -kb keychron/k9_pro/ansi/rgb -km via'
+
+  qmk_export_json:
+    cmds:
+      - mkdir -p artifacts
+      - |
+          docker run \
+            -it --rm \
+            -u $(id -u):$(id -g) \
+            --workdir /qmk_firmware \
+            --volume .:/qmk_firmware \
+            qmkfm/qmk_cli \
+            bash -lc 'qmk c2json -kb keychron/k9_pro/ansi/rgb -km via -o /qmk_firmware/artifacts/keymap_via.json /qmk_firmware/keyboards/keychron/k9_pro/ansi/rgb/keymaps/via/keymap.c'
+
+  # minimal single flash task (local qmk, no docker)
+  flash:
+    cmds:
+      - |
+          env QMK_HOME=${PWD}/_keychron_qmk \
+          qmk flash -kb keychron/k9_pro/ansi/rgb -km via
