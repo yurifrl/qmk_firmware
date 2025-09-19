@@ -14,18 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- #include QMK_KEYBOARD_H
+#include QMK_KEYBOARD_H
 
- /*
-  * Revisions:
-  * MAC_BASE: Caps KC_CAPS -> KC_LCTL.
-  * MAC_BASE: Esc KC_ESC -> QK_GESC (Shift+Esc types ~).
-  * L_FN1: H/J/K/L -> KC_LEFT/KC_DOWN/KC_UP/KC_RIGHT.
-  * L_FN1: Esc -> KC_QUOT.
-  * MAC_BASE: Left Ctrl -> MO(L_FN1) (hold enables layer).
-  * MAC_BASE: Right Ctrl -> KC_RCTL (standard right control).
-  */
- 
+/*
+ * Revisions:
+ * MAC_BASE: Caps KC_CAPS -> KC_LCTL.
+ * MAC_BASE: Esc KC_ESC -> QK_GESC (Shift+Esc types ~).
+ * L_FN1: H/J/K/L -> KC_LEFT/KC_DOWN/KC_UP/KC_RIGHT.
+ * L_FN1: Esc -> KC_QUOT.
+ * MAC_BASE: Left Ctrl -> MO(L_FN1) (hold enables layer).
+ * MAC_BASE: Right Ctrl -> KC_RCTL (standard right control).
+ */
+
  enum layers {
      MAC_BASE,
      WIN_BASE,
@@ -71,4 +71,45 @@
          _______,            _______,  _______,  _______,  _______,  BAT_LVL,  KC_J,     _______,  C(KC_COMM), C(KC_DOT), _______,            _______,
          _______,  _______,  _______,                                _______,                                _______,  _______,  _______,  _______),
  };
+
+#ifdef RGB_MATRIX_ENABLE
+typedef struct {
+    uint8_t layer;
+    uint8_t led_index;
+    uint8_t r, g, b;
+} layer_key_light_t;
+
+static const layer_key_light_t layer_key_lights[] = {
+    {L_FN1, 34, 0, 255, 255},  // H key (Left arrow) - Cyan
+    {L_FN1, 35, 0, 0, 255},    // J key (Down arrow) - Blue
+    {L_FN1, 36, 255, 0, 0},    // K key (Up arrow) - Red
+    {L_FN1, 37, 0, 255, 255},  // L key (Right arrow) - Cyan
+    {L_FN1, 49, 0, 255, 255},  // , key (<) - Cyan
+    {L_FN1, 50, 0, 255, 255},  // . key (>) - Cyan
+};
+
+bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
+    uint8_t current_layer = get_highest_layer(layer_state);
+    
+    if (current_layer == L_FN1) {
+        for (uint8_t i = led_min; i <= led_max; i++) {
+            rgb_matrix_set_color(i, 0, 0, 0);
+        }
+        
+        for (uint8_t j = 0; j < ARRAY_SIZE(layer_key_lights); j++) {
+            if (layer_key_lights[j].layer == current_layer &&
+                layer_key_lights[j].led_index >= led_min && 
+                layer_key_lights[j].led_index <= led_max) {
+                rgb_matrix_set_color(layer_key_lights[j].led_index, 
+                                   layer_key_lights[j].r, 
+                                   layer_key_lights[j].g, 
+                                   layer_key_lights[j].b);
+            }
+        }
+        return true;
+    }
+    
+    return false;
+}
+#endif
  
